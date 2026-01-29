@@ -261,6 +261,7 @@ const Auth = {
             this.currentUser = data.user;
             this.sessionToken = data.token;
             localStorage.setItem('authToken', data.token);
+            this.ensureProfile(data.user);
             this.hideAuthOverlay();
 
         } catch (error) {
@@ -359,6 +360,7 @@ const Auth = {
             this.sessionToken = data.token;
             localStorage.setItem('authToken', data.token);
             this.pendingEmail = null;
+            this.ensureProfile(data.user);
             this.hideAuthOverlay();
 
         } catch (error) {
@@ -420,6 +422,25 @@ const Auth = {
 
     isLoggedIn() {
         return !!this.sessionToken;
+    },
+
+    async ensureProfile(user) {
+        if (!user || !window.supabase) return;
+        
+        try {
+            const { error } = await window.supabase
+                .from('profiles')
+                .upsert({
+                    id: user.id,
+                    username: user.email.split('@')[0],
+                    avatar_url: `https://ui-avatars.com/api/?name=${encodeURIComponent(user.email.split('@')[0])}&background=667eea&color=fff`
+                }, { onConflict: 'id' });
+            
+            if (error) console.warn('[Auth] Profile upsert failed:', error);
+            else console.log('[Auth] Profile synced');
+        } catch (e) {
+            console.warn('[Auth] Profile sync error:', e);
+        }
     },
 
     getUser() {

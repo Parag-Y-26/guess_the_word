@@ -282,6 +282,14 @@ app.post('/auth/signup/verify', async (req, res) => {
         // Clean up pending signup
         pendingSignups.delete(normalizedEmail);
 
+        // Create profile for leaderboard
+        const username = normalizedEmail.split('@')[0];
+        await supabase.from('profiles').upsert({
+            id: newUser.id,
+            username: username,
+            avatar_url: `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=667eea&color=fff`
+        }, { onConflict: 'id' });
+
         // Create session
         const token = createSessionToken(newUser.id, newUser.email);
 
@@ -353,6 +361,14 @@ app.post('/auth/login', async (req, res) => {
 
         // Create session
         const token = createSessionToken(user.id, user.email);
+
+        // Ensure profile exists for leaderboard
+        const username = user.email.split('@')[0];
+        await supabase.from('profiles').upsert({
+            id: user.id,
+            username: username,
+            avatar_url: `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=667eea&color=fff`
+        }, { onConflict: 'id' });
 
         console.log('User logged in:', normalizedEmail);
 
